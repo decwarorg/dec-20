@@ -1,10 +1,6 @@
 Below are initial notes from Lars. Let's try to build on these in a usable way that we can hopefully nicely return.
-- In our ext/t20v4 we've brought in the tops20 folder from Rich Cornwell. The TOPS20AN V4 installation tape seems ok, june 6 1980 https://pdp-10.trailing-edge.com/BB-5254D-BM/. Hopefully things are mostly a matter of installing the OS from this tape?
-- Search for 5254D or for Tops 20 V4 AN and there are already lines in the .ini files, this seems nice. Could already be ready to install?
-- load4_1a.ini is script to make KL boot disk?
-- run4_0a.ini is script to boot KL from disk?
 
-could we in docker have scripts to
+Could we in docker have scripts to
 - build kl exe from ext/sims copy of master at https://github.com/rcornwell/sims 
 - make kl boot disk
 - boot kl from disk
