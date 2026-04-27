@@ -1,0 +1,17 @@
+# docker compose  up --build --force-recreate utexas
+name: project-utexas-arpanet
+services:
+  dec-20:
+    build: ./
+    image: dec-20
+#    ports:
+#      - "2030:2030"
+    volumes:
+      - type: bind
+        source: ./ext-repos
+        target: /ext-repos
+#    command: sh -c "msc/create-tape-utexas23-reconstruction && ./pdp10-kl ./simh/boot-from-disk.ini"
+# below leaves container with interactive terminal
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    
