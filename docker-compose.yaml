@@ -10,8 +10,8 @@ services:
       - type: bind
         source: ./external
         target: /external
-#    command: sh -c "msc/create-tape-utexas23-reconstruction && ./pdp10-kl ./simh/boot-from-disk.ini"
+    command: sh -c "cd external/t20v4 && ./pdp10-kl disks-boot.ini"
 # below leaves container with interactive terminal
-    stdin_open: true # docker run -i
-    tty: true        # docker run -t
+#    stdin_open: true # docker run -i
+#    tty: true        # docker run -t
     

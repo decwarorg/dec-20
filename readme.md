@@ -22,9 +22,10 @@ Information
 
 Code
 - https://pdp-10.trailing-edge.com/tapes/
+- https://pdp-10.trailing-edge.com/BB-4171H-BM/ TOPS-20 v4.1 install works
 - https://pdp-10.trailing-edge.com/BB-4170G-SM/ TOPS-20 release 3A monitor sources
 - https://pdp-10.trailing-edge.com/BB-5254D-BM/ TOPS-20AN V4 installation tape
-- https://pdp-10.trailing-edge.com/BB-5255D-BM/ TOPS-20AN V4 distribution tape 1/2
+- https://pdp-10.trailing-edge.com/BB-5255D-BM/ TOPS-20AN V4 distribution tape 1/2 - love to use this on
 - https://pdp-10.trailing-edge.com/BB-J711A-BM/ TOPS-20AN v4 distribution tape 2/2
 - https://pdp-10.trailing-edge.com/BB-J712A-BM/ TOPS-20AN 2020 V4 installation tape
 - https://pdp-10.trailing-edge.com/BB-J713A-BM/

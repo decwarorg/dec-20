@@ -9,5 +9,8 @@ RUN apt-get update && apt-get install build-essential cmake telnet -y
 # make sure there is LICENSE.txt can create an empty LICENSE.txt in /external/sims
 # cmake ..
 # make pdp10-kl # it's created in sims/BIN/pdp10-kl
+#ADD external /external
+#WORKDIR /external/t20v4
+#RUN ./pdp10-kl test.ini
 
 
