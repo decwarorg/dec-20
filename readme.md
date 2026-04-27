@@ -2,8 +2,8 @@ Below are initial notes from Lars. Let's try to build on these in a usable way t
 
 Could we in docker have scripts to
 - build kl exe from ext/sims copy of master at https://github.com/rcornwell/sims 
-- make kl boot disk
-- boot kl from disk
+- make tops-20 boot disk
+- boot tops-20 from disk
 
 ## Lars's notes
 

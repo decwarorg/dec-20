@@ -8,8 +8,8 @@ services:
 #      - "2030:2030"
     volumes:
       - type: bind
-        source: ./ext-repos
-        target: /ext-repos
+        source: ./external
+        target: /external
 #    command: sh -c "msc/create-tape-utexas23-reconstruction && ./pdp10-kl ./simh/boot-from-disk.ini"
 # below leaves container with interactive terminal
     stdin_open: true # docker run -i
