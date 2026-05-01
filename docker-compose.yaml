@@ -10,8 +10,8 @@ services:
       - type: bind
         source: ./dec-20
         target: /dec-20
-    command: sh -c "cd dec-20 && ./pdp10-kl dsk-boot.ini"
+#    command: sh -c "cd dec-20 && ./pdp10-kl dsk-boot.ini"
 # below leaves container with interactive terminal
-#    stdin_open: true # docker run -i
-#    tty: true        # docker run -t
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
     
