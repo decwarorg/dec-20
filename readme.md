@@ -1,3 +1,19 @@
+## overview
+
+The discussion centers on getting **TOPS-20 V4.0** running on the KL10 emulator, particularly TOPS-20AN V4. Reconstructing a TOPS20-AN V4 install would be ideal.
+
+  * **Initial Problem:** Lars Brinkhoff asked Richard Cornwell if he had attempted to run TOPS-20 V4.0 on the KL10 emulator, as Richard's webpage only listed scripts for V4.1, noting that V4.0 has TOPS-20AN tapes.
+  * **Initial Status:** Noah confirmed that the only working install tape found so far was V4.1 (BB-4171H-BM.tap). He suggested modifying the valid V4.1 installation with essential V4.0 AN files to see if it would work.
+  * **System Discussion:** Lars and Noah discussed the possibility of using V4 on KS10. Lars confirmed that KS10 is the 2020 model.
+  * **Progress on V4.0 AN files:** Noah reported a step forward, successfully extracting files from a V4.0 AN tape (BB-5254D-BM.tap) using BACK10 after DUMPER failed. The files were placed in a GitHub repository at https://github.com/decwarorg/dec-20/tree/main/dec-20/t20anv4.
+  * **Installation Advice:** Richard advised that getting TOPS-20 V4.0 running on KL10 should be straightforward by:
+    1.  Loading V4.0 onto a KS10 system.
+    2.  Building all KL10 monitors and boot code (for tape and disk).
+    3.  Creating a KL10 install tape.
+    4.  Booting the tape and installing the system.
+        Richard added that he is "pretty sure the 4.0 source tape is available."
+  * **Next Steps:** Noah thanked Richard for the information, calling it "exciting," and suggested the goal could be to end up with a T20AN V4 install tape.
+
 Below are initial notes from Lars. Let's try to build on these in a usable way that we can hopefully nicely return.
 
 Could we in docker have scripts to
