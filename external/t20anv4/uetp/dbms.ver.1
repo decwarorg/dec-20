@@ -1,0 +1,718 @@
+;<DBMS.5A>DBMS.VER.2,  3-May-79 16:14:13, Edit by REILLY
+;<UETP.LIB>DBMS.VER.13,  2-Jun-78 10:05:12, Edit by ENGEL
+;<UETP.RUN>DBMS.VER.34, 22-Mar-78 15:04:23, Edit by ENGEL
+!THIS SOFTWARE IS FURNISHED UNDER A LICENSE AND MAY ONLY BE USED
+!  OR COPIED IN ACCORDANCE WITH THE TERMS OF SUCH LICENSE.
+!
+!COPYRIGHT (C) 1977 BY DIGITAL EQUIPMENT CORPORATION, MAYNARD, MASS.
+!	TOPS-20 SYSTEM PROGRAM VERIFICATION PROCEDURE
+!
+!
+!
+!COPYRIGHT (C) 1976,1977 BY
+!DIGITAL EQUIPMENT CORPORATION, MAYNARD, MASS.
+!
+!
+!THIS SOFTWARE IS FURNISHED UNDER A LICENSE AND MAY BE USED AND COPIED
+!ONLY  IN  ACCORDANCE  WITH  THE  TERMS  OF  SUCH LICENSE AND WITH THE
+!INCLUSION OF THE ABOVE COPYRIGHT NOTICE.  THIS SOFTWARE OR ANY  OTHER
+!COPIES THEREOF MAY NOT BE PROVIDED OR OTHERWISE MADE AVAILABLE TO ANY
+!OTHER PERSON.  NO TITLE TO AND OWNERSHIP OF THE  SOFTWARE  IS  HEREBY
+!TRANSFERRED.
+!
+!
+!THE INFORMATION IN THIS SOFTWARE IS SUBJECT TO CHANGE WITHOUT  NOTICE
+!AND  SHOULD  NOT  BE  CONSTRUED  AS A COMMITMENT BY DIGITAL EQUIPMENT
+!CORPORATION.
+!
+!DIGITAL ASSUMES NO RESPONSIBILITY FOR THE USE OR RELIABILITY  OF  ITS
+!SOFTWARE ON EQUIPMENT WHICH IS NOT SUPPLIED BY DIGITAL.
+!
+!
+!****************************************
+!DBMS MUST HAVE ENQ-DEQ CAPABILITIES.
+!****************************************
+@def dsk: <uetp.dbms>,DSK:<uetp.lib>
+@take sys.cmd
+		!***** message: Start of FORTRAN DBMS test
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE START
+*BLABEL DBM1:
+*SEND Start of FORTRAN DBMS test
+*EXIT
+
+@NOERROR
+@delete *.*
+@expunge <uetp.dbms>
+@error
+
+
+@inf dis <uetp.dbms>
+@inf log all
+
+
+!TEST FOR EXISTENCE OF FILES.
+@GET SYS:SCHEMA.EXE
+@IF (NOERROR) @GOTO DBM1::
+
+		!***** message: FILE SYS:SCHEMA.EXE NOT FOUND
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBM1:
+*SEND FILE SYS:SCHEMA.EXE NOT FOUND
+*EXIT
+
+@GOTO DBM1A::
+
+DBM1::
+@GET SYS:SCHEMA
+@I VER
+DBM1A::
+@GET SYS:FORDML.EXE
+@IF (NOERROR) @GOTO DBM11::
+
+		!***** message: FILE SYS:FORDML.EXE NOT FOUND
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBM11:
+*SEND FILE SYS:FORDML.EXE NOT FOUND
+*EXIT
+
+@GOTO DBM11A::
+
+DBM11::
+@GET SYS:FORDML
+@I VER
+DBM11A::
+@GET SYS:DBMEND.EXE
+@IF (NOERROR) @GOTO DBM13::
+
+		!***** message: FILE SYS:DBMEND.EXE NOT FOUND
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBM11:
+*SEND FILE SYS:DBMEND.EXE NOT FOUND
+*EXIT
+
+@GOTO DBM13A::
+
+DBM13::
+@GET SYS:DBMEND
+@I VER
+DBM13A::
+@GET SYS:DBINFO.EXE
+@IF (NOERROR) @GOTO DBM12::
+
+		!***** message: FILE SYS:DBINFO.EXE NOT FOUND
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBM13:
+*SEND FILE SYS:DBINFO.EXE NOT FOUND
+*EXIT
+
+@GOTO DBM12A::
+
+DBM12::
+@GET SYS:DBINFO
+@I VER
+DBM12A::
+!TEST FOR EXISTENCE OF HELP FILES.
+@COPY SYS:SCHEMA.HLP (TO) NUL:
+@IF (NOERROR) @GOTO DBH1::
+
+		!***** message: FILE SYS:SCHEMA.HLP NOT FOUND
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBM12:
+*SEND FILE SYS:SCHEMA.HLP NOT FOUND
+*EXIT
+
+
+DBH1::
+@COPY SYS:FORDML.HLP (TO) NUL:
+@IF (NOERROR) @GOTO DBH11::
+
+		!***** message: FILE SYS:FORDML.HLP NOT FOUND
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBH1:
+*SEND FILE SYS:FORDML.HLP NOT FOUND
+*EXIT
+
+
+DBH11::
+@COPY SYS:DBMEND.HLP (TO) NUL:
+@IF (NOERROR) @GOTO DBH13::
+
+		!***** message:FILE SYS:DBMEND.HLP NOT FOUND
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBH11:
+*SEND FILE SYS:DBMEND.HLP NOT FOUND
+*EXIT
+
+
+DBH13::
+@COPY SYS:DBINFO.HLP (TO) NUL:
+@IF (NOERROR) @GOTO DBH12::
+
+		!***** message: FILE SYS:DBINFO.HLP NOT FOUND
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBH13:
+*SEND FILE SYS:DBINFO.HLP NOT FOUND
+*EXIT
+
+
+DBH12::
+!***********************************************************
+!
+!NEXT, DO A TEST OF FUNCTIONING OF SOFTWARE PRODUCT
+@DEFINE JRN: DSK:
+@INFORMATION (ABOUT) LOGICAL-NAMES (OF) job
+!
+! DO A FORTRAN/DBMS TEST
+!
+@GET SYS:FORTRA.EXE
+@IF (NOERROR) @GOTO DBFOR::
+
+		!***** message: FORTRAN-COMPILER NOT AVAILABLE USING COBOL
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE MINOR
+*BLABEL DBH12:
+*SEND FORTRAN-COMPILER NOT AVAILABLE USING COBOL
+*EXIT
+
+!
+@GOTO GORD::
+!
+!***********************************************************
+!
+!
+DBFOR::
+!
+@copy ordent.ddl ordent.ddl
+@copy ordtin.ddl ordtin.ddl
+@copy tstidb.ddl tstidb.ddl
+@copy v4s.ddl v4s.ddl
+@copy v4b.ddl v4b.ddl
+
+@RUN SYS:SCHEMA
+*ORDENT/CREATE
+*ORDTIN/CREATE
+*V4S/CREATE
+*V4B
+@IF (NOERROR) @GOTO DBFO1::
+
+		!***** message: FATAL ERRORS FROM SYS:SCHEMA
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBFOR:
+*SEND FATAL ERRORS FROM SYS:SCHEMA
+*EXIT
+
+
+DBFO1::
+@RUN SYS:FORDML
+*V4S
+*V4B
+*V4
+*UNV4
+*FIT2
+@IF (NOERROR) @GOTO DBFO2::
+
+		!***** message: FATAL ERRORS FROM SYS:FORDML
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF01:
+*SEND FATAL ERRORS FROM SYS:FORDML
+*EXIT
+
+
+DBFO2::
+@COMPILE /COMPILE FIT2.for,V4.for,UNV4.for,V4S.for,V4B.for
+@IF (NOERROR) @GOTO DBFO3::
+
+		!***** message: FATAL ERRORS COMPILING PROGRAMS.
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBFO2:
+*SEND FATAL ERRORS COMPILING PROGRAMS.
+*EXIT
+
+
+DBFO3::
+@RUN SYS:LINK
+*V4/G
+@IF (NOERROR) @GOTO DBFO4::
+
+		!***** message: FATAL ERROR(S) LINKING V4.
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBFO3:
+*SEND FATAL ERROR(S) LINKING V4.
+*EXIT
+
+@GOTO DBFO5::
+
+DBFO4::
+@SAVE V4
+@START (PROGRAM)
+*1
+@IF (NOERROR) @GOTO DBFO5::
+
+		!***** message: ERRORS RUNNING PROG V4
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBFO4:
+*SEND ERRORS RUNNING PROG V4
+*EXIT
+
+
+DBFO5::
+@RUN SYS:DBMEND
+*JOURNAL ORDTIN
+*START
+*END
+*OPEN ALL
+*MERGE BEFORE
+*CLOSE ALL
+*UNLOAD
+@IF (NOERROR) @GOTO DBFO6::
+
+		!***** message: ERRORS RUNNNING DBMEND
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBFO5:
+*SEND ERRORS RUNNING DBMEND
+*EXIT
+
+
+DBFO6::
+@COPY (FROM) CUSFIL.DBS (TO) *.EMP
+@IF (NOERROR) @GOTO DBFO7::
+
+		!***** message: CAN'T FIND CUSFIL.DBS
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBFO6:
+*SEND CAN'T FIND CUSFIL.DBS
+*EXIT
+
+
+DBFO7::
+
+DBFO8::
+@run v4
+*0
+@IF (NOERROR) @GOTO DBFO9::
+
+		!***** message: ERROR RUNNING V4 WITH PARM=0
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBFO8:
+*SEND ERROR RUNNING V4 WITH PARM=0
+*EXIT
+
+
+DBFO9::
+@RUN SYS:LINK
+*UNV4/G
+@IF (NOERROR) @GOTO DBF10::
+
+		!***** message: ERRORS LINKING UNV04
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBFO9:
+*SEND ERRORS LINKING UNV04
+*EXIT
+
+@GOTO DBF11::
+
+DBF10::
+@START (PROGRAM)
+@IF (NOERROR) @GOTO DBF11::
+
+		!***** message: ERRORS RUNNING UNV4
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF10:
+*SEND ERRORS RUNNING UNV4
+*EXIT
+
+
+DBF11::
+!
+!
+!
+DBF12::
+@RUN SYS:LINK
+*V4S/G
+!
+@IF (NOERROR) @GOTO DBF13::
+
+		!***** message: ERRORS LINKING V4S
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF12:
+*SEND ERRORS LINKING V4S
+*EXIT
+
+@GOTO DBF14::
+
+DBF13::
+@START (PROGRAM)
+*2
+@IF (NOERROR) @GOTO DBF14::
+
+		!***** message: ERRORS RUNNING V4S
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF13:
+*SEND ERRORS RUNNING V4S
+*EXIT
+
+
+DBF14::
+!
+DBF16::
+@RUN SYS:LINK
+*FIT2/G
+@IF (NOERROR) @GOTO DBF17::
+
+		!***** message: ERRORS LINKING FIT2
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF16:
+*SEND ERRORS LINKING FIT2
+*EXIT
+
+@GOTO DBF18::
+
+DBF17::
+@START (PROGRAM)
+@IF (NOERROR) @GOTO DBF18::
+
+		!***** message: ERRORS RUNNING FIT2
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF17:
+*SEND ERRORS RUNNING FIT2
+*EXIT
+
+
+DBF18::
+		!***** message: END OF FORTRAN DBMS TEST
+@run <uetp.lib>sender
+*test dbms
+*type MINOR
+*blabel dbf18::
+*send END OF FORTRAN DBMS TEST
+*exit
+
+
+END::
+!
+!
+@NOERROR
+@DELETE (FILES) *.JRN,CUSFIL.EMP
+@DELETE (FILES) V4.REL,UNV4.REL,FIT2.REL,V4%.REL
+@EXPUNGE <uetp.dbms>
+@ERROR
+!***********************************************************
+!
+!BEGINNING OF COBOL/DBMS TESTS
+!
+GORD::
+
+		!***** message: starting cobol dbms test
+@run <uetp.lib>sender
+*type MINOR
+*blabel gord::
+*test dbms
+*send starting cobol dbms test
+*exit
+
+
+@DEFINE JRN: DSK:
+@INFORMATION (ABOUT) LOGICAL-NAMES (OF) JOB
+!CHECK FOR EXISTENCE OF COBOL
+@GET SYS:COBOL.EXE
+@IF (NOERROR) @GOTO CBTST::
+
+		!***** message: COBOL NOT AVAILABLE - NO COBOL DBMS TEST PERFORMED
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL GORD:
+*SEND COBOL NOT AVAILABLE - NO COBOL DBMS TEST PERFORMED
+*EXIT
+
+@GOTO END::
+
+CBTST::
+! MAKE SURE .DBS FILES ARE 0-LENGTH
+@GET SYS:COBOL
+@I VER
+@I FIL
+@RUN SYS:SCHEMA
+*ORDENT/CRE
+*TSTIDB/NOCR
+@IF (NOERROR) @GOTO DBF50::
+
+		!***** message: ERRORS RUNNING SCHEMA FOR COBOL TEST
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL CBTST:
+*SEND ERRORS RUNNING SCHEMA FOR COBOL TEST
+*EXIT
+
+
+DBF50::
+@RUN SYS:COBOL
+*ORDENT=ORDENT
+*TSTIDB=TSTIDB
+@IF (NOERROR) @GOTO DBF51::
+
+		!***** message: ERRORS COMPILING COBOL DBMS TEST
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF50:
+*SEND ERRORS COMPILING COBOL DBMS TEST
+*EXIT
+
+@GOTO END::
+
+DBF51::
+@DEL *.LST
+@RUN SYS:LINK
+*TSTIDB/G
+@IF (NOERROR) @GOTO DBF52::
+
+		!***** message: ERROR LINKING COBOL TSTIDB
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF51:
+*SEND ERROR LINKING COBOL TSTIDB
+*EXIT
+
+@GOTO  END::
+
+DBF52::
+@START (PROGRAM)
+@IF (NOERROR) @GOTO DBF53::
+
+		!***** message: ERRORS RUNNING TSTIDB (COBOL TEST)
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF52:
+*SEND ERRORS RUNNING TSTIDB (COBOL TEST)
+*EXIT
+
+
+DBF53::
+@RUN SYS:LINK
+*ORDENT/G
+@IF (NOERROR) @GOTO DBF54::
+
+		!***** message: ERROR LINKING ORDENT
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF53:
+*SEND ERROR LINKING ORDENT
+*EXIT
+
+@GOTO END::
+
+DBF54::
+@START (PROGRAM)
+*BEGIN
+ENTER
+PROD
+KA10
+CENTRAL PROCESSOR
+140000
+DF10
+DATA CHANNEL
+14000
+KI10
+CENTRAL PROCESSOR
+240000
+
+SLSENG
+HOGAN, R.
+MAYNARD
+617
+897-5111
+2968
+CARMICHAEL, R.
+SANTA ANNA
+714
+979-2460
+2
+BRANDT, D.
+CAMBRIDGE
+617
+491-6130
+2522
+CUTHBERTSON, F.
+CAMBRIDGE
+617
+491-6130
+2522
+
+CUSTOM
+DEC
+146 MAIN ST.
+MAYNARD
+MASS.
+01754
+
+YES
+070973
+KA10
+3
+DF10
+4
+
+CUSTOM
+COPLEY
+2525 PACIFIC BEACH BLVD.
+SAN DIEGO
+CALIF.
+07111
+CARMICHAEL, R.
+YES
+071173
+KA10
+1
+
+CUSTOM
+FIRST CHURCH
+25 HUNTINGTON AVE.
+BOSTON
+MASS.
+02139
+BRANDT, D.
+YES
+071173
+KI10
+1
+DF10
+3
+
+CUSTOM
+SPAN
+25 TURNPIKE ROAD
+PROVIDENCE
+RHODE ISLAND
+01800
+CUTHBERTSON, F.
+NO
+
+INQUIRY
+CUSTOM
+DEC
+YES
+YES
+
+ENTER
+PROD
+MC10
+MEMORY PORT AND CABLE
+1000
+MD10-E
+MD10 32K WORD MEMORY EXPANSION MODULE
+42000
+
+PURORD
+DEC
+071273
+MC10
+2
+
+
+QUIT
+@IF (NOERROR) @GOTO DBF55::
+
+		!***** message: ERRORS RUNNING ORDENT
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL DBF551:
+*SEND ERRORS RUNNING ORDENT
+*EXIT
+
+
+DBF55::
+%ERR::
+		!***** message: UNKNOWN ERRORS IN TEST
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE ERROR
+*BLABEL END:
+*SEND UNKNOWN ERRORS IN TEST
+*EXIT
+
+END::
+%FIN::
+@CHKPNT ADSF::
+		!***** message: END OF DBMS TEST
+
+
+@NOERROR
+@reset
+@DELETE  AREA1.DBS
+@DELETE  CUSFIL.DBS
+@DELETE    ORDENT.JRN
+@DELETE    ORDENT.REL
+@DELETE    ORDENT.SCH
+@DELETE  ORDFIL.DBS
+@DELETE    ORDTIN.SCH
+@DELETE  PRDFIL.DBS
+@DELETE  SYSFIL.DBS
+@DELETE  TSTIDB.REL
+@DELETE    V4B.SCH
+@DELETE    V4S.SCH
+@DELETE TSTIDB.SCH
+@del fit2.for,fs1.sub,ordent.ddl,ordent.lst,ordtin.ddl
+@del ss1.sub,ss3.sub,subs1.sub,tstidb.ddl,unv4.for,v4.exe,v4.for
+@del v4b.ddl,v4b.for,v4s.ddl,v4s.for
+@expunge <uetp.dbms>
+
+@run <uetp.lib>sender
+*TEST DBMS
+*TYPE END
+*BLABEL END:
+*SEND END OF DBMS TEST
+*EXIT
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      

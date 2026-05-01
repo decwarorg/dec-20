@@ -1,0 +1,584 @@
+;<LAMIA>TAPOPS.MAC.99, 13-Apr-77 11:33:04, Edit by LAMIA
+	TITLE TAPOPS - MAGNETIC TAPE INPUT/OUTPUT SUBROUTINES
+
+
+;   Copyright (C) 1977, Digital Equipment Corp., Maynard, Mass. 01754
+
+
+	COMMENT \
+
+	This set of subroutines (TOPEN, TREAD, TWRITE, TCLOSE)
+	is a set of Fortran-callable subroutines which give the 
+	calling program the capability of reading and writing
+	individual records on magnetic tape files using the
+	buffered record mode monitor I/O calls (SINR and SOUTR).
+	The user must load this module with the rest of the .REL files.
+	\
+	SUBTTL	DATA DEFINITION AND STORAGE
+
+	SEARCH MONSYM,MACSYM
+	.REQUIRE SYS:MACREL
+	SALL
+
+;  Define the maximum buffer size supported by system (currently 16. pages)
+
+MAXREC=20K
+
+
+; AC defintions
+
+T1=1	;temp registers
+T2=2
+T3=3
+T4=4
+
+J=5	;JFN from calling program
+B=6	;addr. of I/O buffer
+	;	or
+N=5	;logical name to be used in GTJFN
+N1=6
+
+L=7	;length of I/O buffer in bytes, or
+MX=7	;maximum record size in bytes from TOPEN
+
+F1=10	;return flag words
+F2=11
+
+MT=12	;parameters from TOPEN for MTOPR, including
+	;I/O status
+	;density
+	;data mode
+	;parity
+
+$ER=13	;addr. of optional ERROR return
+$EN=14	;addr. of optional END-OF-FILE return
+
+P=17	;stack pointer
+AP=16	;argument block pointer
+	SUBTTL DEFINE USEFUL MACROS
+; Macro to return to the +2 return point from a subroutine call
+
+	DEFINE RETSKP < JRST [	AOS 0(P)
+				RET]	>
+
+; Macro to return to the +3 point
+
+	DEFINE RETSK2 < JRST [	AOS 0(P)
+				AOS 0(P)
+				RET]	>
+
+; Macros to test for optional returns, and fix up stack if so.
+
+	DEFINE ERRRET < JRST [	SKIPE $ER
+				HRRM $ER,0(P)
+				RET]		>
+	DEFINE ENDRET < JRST [	SKIPE $EN
+				HRRM $EN,0(P)
+				RET]		>
+
+;	Macros to test for an error return in an inferior
+;	subroutine, do the appropriate return if there, and
+;	give a message if not.  These macros should be followed by a 
+;	JSHLT or HALTF as appropriate to the use. (i.e., if used as
+;	an error from a JSYS, use the JSHLT to get more information,
+;	but if used for an internally detected error, use HALTF.
+
+	DEFINE LOSERR (TEXERR) <SKIPE $ER
+				RET
+				TMSG <
+??? TEXERR> >
+
+	DEFINE LOSEND (TEXEND) <SKIPE $EN
+				RETSKP
+				TMSG <
+??? TEXEND> >
+
+; Macro to set the return flags to ASCII text given in
+; macro args.  Note the address of the return word is in F1, F2.
+
+	DEFINE SETFLG (VAL1,VAL2) <
+				MOVE T1,[ASCII /VAL1/]
+				MOVEM T1,0(F1)
+				MOVE T1,[ASCII /VAL2/]
+				MOVEM T1,0(F2)	>
+
+; Macro to clear any error flags set after processing them o.k.
+
+	DEFINE MTRSET <	HRRZ T1,J
+			MOVX T2,.MOCLE
+			MTOPR	>
+	SUBTTL SUBROUTINE ENTRY AND EXIT POINTS
+
+; All the externally available entry points are defined
+; here, and all returns to the calling programs follow calls
+; to local subroutines (i.e. no local subroutines return to
+; external points).
+
+; Callable subroutines are:
+
+;	CALL TOPEN (LOGNAM,MTJFN,INOUT,MAXSIZ,DENSTY,MODE,PARITY,$ERR)
+
+; where	LOGNAM = 1 word logical name to open
+;	MTJFN  = JFN returned to program
+;	INOUT  = 0 for input, 1 for output
+;	MAXSIZ = max. record size in bytes (defaults to 20000)
+;	DENSTY = 3 for 800 BPI, 4 for 1600 BPI
+;	MODE   = 1 for dump, 3 for ASCII, 4 for industry
+;	PARITY = 0 for odd, 1 for even
+;	$ERR   = optional alternate error return address
+
+;	CALL TREAD (MTJFN,BUFFER,LENGTH,FLAG1,FLAG2,$ERR,$END)
+
+; where	MTJFN  = jfn to use to read from
+;	BUFFER = array to do I/O to
+;	LENGTH = # bytes to use in record
+;	FLAG1,FLAG2 = return error flags (0,0 for o.k.)
+;	$END   = alternate end-of-file return address
+;	$ERR   = alternate error return addr.
+
+;	CALL TCLOSE (MTJFN,$ERR)
+
+; where MTJFN, $ERR as above.
+
+;	CALL TWRITE (MTJFN,BUFFER,LENGTH,FLAG1,FLAG2,$ERR)
+
+; where parameters are as in TREAD  
+	ENTRY TOPEN
+TOPEN:
+	CALL TOCHEK	;check the parameters
+	 ERRRET		; On error return, go back to alternate return
+	CALL TOGJFN	;get the JFN for the file
+	 ERRRET
+	CALL TOOPEN	;do the OPENF on the file
+	 ERRRET
+	CALL TOMTOP	;set up the tape parameters and modes
+	 ERRRET
+	RET		;the expected successful return
+
+	ENTRY TREAD
+TREAD:
+	CALL TRCHEK
+	 ERRRET
+	CALL TRSINR	;ACTUALLY DO THE SINR INPUT
+	 ERRRET
+	 ENDRET		; comes to the +2 return on end-of-file
+	RET
+
+	ENTRY TCLOSE
+TCLOSE:
+	CALL TCCHEK
+	 ERRRET
+	CALL TCCLOS
+	 ERRRET
+	RET
+
+	ENTRY TWRITE
+TWRITE:
+	CALL TRCHEK	;USE THE SAME SUBR. AS TREAD HERE
+	 ERRRET
+	CALL TWSOUR
+	 ERRRET
+	RET
+	SUBTTL SHORT TAPE POSITIONING SUBROUTINES
+TREW:	ENTRY TREW	;REWIND THE TAPE WITHOUT CLOSING OR WRITING EOF MARK
+	CALL TCCHEK	;USE TCLOSE ARGUMENT CHECKER TO INSURE ONE ARGUMENT EXISTS	
+	 HALTF		;SHOULD NEVER COME HERE!!!!
+	HRRZ T1,J		;REWIND THE TAPE FILE GIVEN
+	MOVEI T2,.MOREW
+	MTOPR
+	RET
+
+TSKIPF:	ENTRY TSKIPF	;SKIP FORWARD TO A TAPE MARK
+	CALL TCCHEK	;USE TCLOSE ARGUMENT CHECKER TO INSURE ONE ARGUMENT EXISTS
+	 HALTF		;SHOULD NEVER COME HERE!!!!
+	HRRZ T1,J
+	MOVEI T2,.MOFWF
+	MTOPR
+	MOVEI T2,.MOCLE	;CLEAR THE EOF BIT THAT JUST GOT SET
+	MTOPR		; BY SPACING OVER A FILE MARK
+	RET
+
+TWEOF:	ENTRY TWEOF	;WRITE A TAPE MARK ON THE TAPE FILE
+	CALL TCCHEK	;USE TCLOSE ARGUMENT CHECKER TO INSURE ONE ARGUMENT EXISTS
+	 HALTF		;SHOULD NEVER COME HERE!!!!
+	HRRZ T1,J		; (MUST BE OPENED FOR OUTPUT)
+	MOVEI T2,.MOEOF	
+	MTOPR
+	RET
+
+TUNL:	ENTRY TUNL	;CLOSE, REWIND, AND UNLOAD THE TAPE
+	CALL TCCHEK	;USE TCLOSE ARGUMENT CHECKER TO INSURE ONE ARGUMENT EXISTS
+	 HALTF		;SHOULD NEVER COME HERE!!!!
+	SETZ $ER,	;MAKE SURE ERRORS CAUSE HALTS
+	HRRZ T1,J	;GET THE JFN TO CLOSE
+	GTSTS		;GET THE FILE STATUS, IN PARTICULAR..
+	TXNN T2,GS%NAM	;WAS THE JFN GIVEN VALID?
+	 JRST [ LOSERR <Bad JFN given in Unload request> 
+		HALTF]
+
+	TXNN T2,GS%OPN	;IS THE FILE CURRENTLY OPEN?
+	 RET		;NO, JUST RETURN
+
+	TXNE T2,GS%WRF	;IS THE FILE OPEN FOR WRITE ACCRSS?
+	 CALL TWEOF	;YES, WRITE AN EOF ON THE OPEN FILE
+	MOVEI T2,.MORUL	;AND UNLOAD THE TAPE
+	MTOPR
+
+	IOR T1,[CO%NRJ]		;OR IN BIT TO RETAIN THE JFN
+	CLOSF		;CLOSE THE FILE AND RETAIN JFN
+	 ERJMP [ LOSERR <CLOSE Failure during Unload request> 
+		 JSHLT]
+	HRRZ T1,T1	;CLEAR L.H. OF T1
+	DVCHR		;GET THE DEVICE DESIGNATOR OF THE JFN IN ORDER TO
+	RELD		;DEASSIGN THE DEVICE
+	 ERJMP [ LOSERR <Problem in trying to deassign device>
+		 JSHLT]
+	RET
+	SUBTTL TOCHEK - TOPEN PARAMETER CHECKER
+TOCHEK:
+
+; FIRST, CHECK FOR ENOUGH ARGS. (DON'T WORRY ABOUT TYPES)
+
+	SETZ $ER,	;FIRST, CLEAR THE ERROR ADDRESS AC
+
+	HLRE T1,-1(AP)	;GET NEGATIVE OF NUMBER OF ARGS.  IN T1
+	MOVM T1,T1	;MAKE IT POSITIVE
+	CAIGE T1,7	;AT LEAST THE MINIMUM OF 7 ARGS?
+	 JRST [ LOSERR <Not enough arguments in TOPEN request> ;no, give error
+		HALTF]
+
+; Next, check for and grab error return argument.
+
+	CAIL T1,^D8	;IS THERE AN ERROR RETURN ARG (8 TH ARG)?
+	 MOVEI $ER,@7(AP)	;YES, GET ADDRESS OF ALTERNATE RETURN
+				; FROM ARGUMENT LIST
+
+	MOVE N,@0(AP)	;GET THE LOGICAL NAME WORD
+	MOVE T4,[POINT 7,N]	;USE BYTE POINTER IN T4 TO LOOK AT NAME
+	MOVEI T2,5	;COUNT UP TO 5 BYTES
+
+TOC1:
+	ILDB T1,T4	;LOOK AT EACH BYTE IN LOGICAL NAME
+	CAIN T1," "	;IS IT BLANK (USUAL CASE)
+	 JRST DELIM0	;YES, GO CHANGE TO A : AND ADD 0 BYTE
+	CAIN T1,":"	;COULD BE A : ...
+	 JRST DELIM1	;IF SO, DON'T BOTHER TO PUT IN ANOTHER
+	CAIN T1,0	;SHOULD NEVER FIND A 0, BUT CHECK ANYWAY
+	 JRST DELIM0	;IF SO, PUT IN THE : AND 0
+
+	SOJG T2,TOC1	;COUNT UP TO 5 BYTES - IF NO DELIMITERS,
+			; USE ALL 5 AS LOGICAL NAME
+	ILDB T1,T4	;DO AN EXTRA LOAD JUST TO POSITION CORRECTLY
+			; TO ADD THE : AND 0 BYTES AFTER A 5 CHAR. NAME
+
+
+DELIM0:	MOVEI T1,":"	;PUT IN A ":" IN THE LOGICAL NAME
+	DPB T1,T4
+
+DELIM1:	SETZ T1,	;PUT A 0 BYTE IN LOGICAL NAME FOR GTJFN
+	IDPB T1,T4
+
+; Now, logical name is in AC's N & N1, ready for GTJFN
+	RETSKP		;successful return
+	SUBTTL REST OF TOPEN SUPPORT SUBR.
+TOGJFN:	MOVE T2,[POINT 7,N]
+	MOVX T1,GJ%OLD+GJ%SHT	;OLD FILE, SHORT MODE GTJFN
+	GTJFN
+	 ERJMP [ LOSERR <Error in TOPEN at GTJFN>
+		 JSHLT]
+
+	HRRZM T1,@1(AP)	;PUT JFN IN RETURN WORD
+
+	RETSKP	;SUCCESS
+
+TOOPEN:	MOVX T2,OF%RD	;ASSUME AT LEAST READ ACCESS
+	SKIPE @2(AP)	;CHECK I/O MODE NOW..
+	MOVX T2,OF%WR	;IF WRITE INSTEAD, GET THAT
+
+	MOVE MT,@5(AP)	;GET THE DATA MODE
+	CAIE MT,.SJDMA	;IF ASCII
+	 JRST TOO1	; (NOT ASCII)...
+
+	MOVSI T4,440700	;DO A REAL HACK BY PUTTING L.H. OF BYTE
+			; POINTER IN RETURNED JFN WORD.
+	HLLM T4,@1(AP)
+	IOR T2,[FLD(7,OF%BSZ)]	;7-BIT BYTES
+	JRST TOO2
+
+TOO1:	CAIE MT,.SJDM8	;IF INDUSTRY
+	 JRST [ LOSERR <Data mode given is not 3(Ascii) or 4(industry) in TOPEN>
+		HALTF]
+	MOVSI T4,441000
+	HLLM T4,@1(AP)
+	IOR T2,[FLD(^D8,OF%BSZ)]	;8-BIT BYTES
+
+TOO2:	OPENF
+	 ERJMP [ LOSERR <Error in OPENF in TOPEN>
+		 JSHLT]
+	RETSKP
+
+TOMTOP:	MOVE T3,@5(AP)	;SET THE DATA MODE OF  THE TAPE
+	MOVX T2,.MOSDM
+	MTOPR
+	 ERJMP [ LOSERR <Error in setting data mode function with MTOPR>
+		 JSHLT]
+	MOVE T3,@6(AP)	;SET THE PARITY
+	MOVX T2,.MOSDN
+	MTOPR
+	 ERJMP [ LOSERR <Error in setting parity function with MTOPR>
+		 JSHLT]
+	MOVE T3,@4(AP)	;SET THE DENSITY
+	MOVX T2,.MOSDN
+	MTOPR
+	 ERJMP [ LOSERR <Error in setting density function with MTOPR>
+		 JSHLT]
+	MOVE T3,@3(AP)	;SET THE MAX. RECORD SIZE TO MAXSIZ ARGUMENT
+	MOVX T2,.MOSRS
+	MTOPR
+	 ERJMP [ LOSERR <ERROR IN SETTING THE RECORD SIZE FUNCTION WITH MTOPR>
+		 JSHLT]
+	RETSKP
+
+	SUBTTL TRCHEK - TREAD AND TWRITE PARAM. CHECKER
+TRCHEK:
+
+	SETZ $ER,	;CLEAR THE ERROR AND EOF RETURN ADDRESSES
+	SETZ $EN,
+	HLRE T1,-1(AP)	;GET THE -NUMBER OF ARGS. IN ARG BLOCK
+	MOVM T1,T1	;CONVERT IT TO A + NUMBER
+	CAIGE T1,5	;AT LEAST A MIN. OF 5 ARGS?
+	 JRST [ LOSERR <Not enough arguments in TREAD or TWRITE request>
+		HALTF]
+
+	CAIL T1,6	;THE SIXTH ARG. WOULD BE $ERR RETURN
+	 MOVEI $ER,@5(AP)	;PICK UP ERROR RETURN ADDRESS
+	CAIL T1,7	;THE SEVENTH ARG. WOULD BE $END RETURN
+	 MOVEI $EN,@6(AP)
+
+	MOVE J,@0(AP)	;REMEMBER THAT L.H. HAS BYTE POINTER STUFF IN IT
+	HRRZI B,@1(AP)	;RESOLVE ALL INDIRECTIONS AND GET BUFFER ADDRESS
+	MOVE L,@2(AP)	;GET THE NUMBER OF BYTES TO READ
+	MOVEI F1,@3(AP)	;GET THE ADDRESSES OF THE FLAG RETURN WORDS
+	MOVEI F2,@4(AP)
+
+; Check validity of length parameter .. must be 0 < LENGTH < max. rec. size
+
+	JUMPLE L,TRC1	;IF LENGTH <= 0, COMPLAIN
+
+	SKIPA
+
+;;;		COMMENT OUT THE COMPARE TEST FOR NOW.
+;;;
+;;;	CAMLE L,MAXSIZ	;COMPARE REQUESTED LENGTH TO MAX. REQUESTED
+			; RECORD SIZE
+TRC1:	 JRST [ SETFLG (<Inv. >,<ARG.>)
+		LOSERR <Invalid length parameter in TREAD or TWRITE request>
+		HALTF]
+
+	RETSKP		;SUCCESSFUL RETURN
+	SUBTTL ACTUAL INPUT SUBROUTINE FOR TREAD
+
+; Notes:	Returns +1 on errors
+;		Returns +2 on end-of-file
+;
+; Uses a hack of carrying the byte pointer L.H. in L.H. of MTJFN
+; argument word.
+
+TRSINR:	HRRZ T1,J	;JFN
+	HLLZ T2,J	;L.H. OF BYTE POINTER
+	HRR T2,B	;BUFFER ADDRESS
+	MOVN T3,L	;NEG. OF # BYTES TO TRANSMIT TO BUFFER
+	SINR
+	 ERJMP TRSUKS	;ERRORS IN SINR -- GO FIND OUT WTH HAPPENED
+
+	MOVM T3,T3	;T3 HAS THE DIFFERENCE IN THE REQUESTED # OF
+	SUB L,T3	; BYTES AND THE ACTUAL # TRANSMITTED, SO GET
+	MOVEM L,@2(AP)	; THE NUMBER TRANSMITTED AND RETURN TO THE CALLER
+
+	MOVE T1,[ASCII /No ER/]
+	MOVEM T1,0(F1)
+	MOVE T1,[ASCII /RORS /]
+	MOVEM T1,0(F2)	;SET FLAGS TO "No ERRORS"
+
+	RETSK2		;GIVE SUCCESSFUL RETURN
+	SUBTTL ERROR PROCESSING FOR SINR IN TREAD
+TRSUKS:	MOVX T1,.FHSLF	;GET THE ERROR CONDITION
+	GETER
+	 ERCAL JSHLT0	;LOSE ON ANY ERRORS HERE
+	HRRZM T2,T1	;GET THE ERROR CONDITION IN T1
+
+	CAIE T1,IOX10	;RECORD TOO LONG?
+	 JRST TRS1	; NO...
+	HRRZ T1,J	;YES, GET THE DEVICE STATUS AND COMPUTE 
+	GDSTS		; THE NUMBER OF DISCARDED BYTES
+	 ERCAL JSHLT0
+	HLRZ T1,T3	;GET TOTAL # BYTES IN RECORD IN T1
+	SUB L,T1	;SUBTRACT, GET -REMAINDER IN L
+	MOVEM L,@2(AP)	; AND RETURN TO CALLER
+	SETFLG (<Rec. >,< LONG>)	;SET THE RETURN FLAGS
+	MTRSET
+	LOSERR <Record too long in TREAD>	;return or give message
+	JSHLT
+
+TRS1:	CAIE T1,IOX4	;EOF DETECTED?
+	 JRST TRS2	;  (NO)...
+	SETFLG (<E O F>,<     >)	;YES..SET FLAGS AND GIVE ERROR RETURN OR MESSAGE
+	MTRSET
+	LOSEND <End-of-file reached in TREAD>
+	JSHLT
+
+TRS2:	CAIE T1,DESX5	;FILE NOT OPENED? (DESX5 OR IOX1)
+	CAIN T1,IOX1
+	 SKIPA
+	  JRST TRS3
+
+	SETFLG (<Dev n>,<ot av>)
+	MTRSET
+	LOSERR <File not opened in TREAD>
+	JSHLT
+
+TRS3:	CAIE T1,IOX5	;DATA OR DEVICE ERRORS?
+	 JRST [ TMSG<
+???? Unanticipated error in TREAD>	;ANYTHING ELSE I WON'T HANDLE -- HALT
+	 JSHLT]
+			; GOT DATA OR DEVICE ERRORS, SO
+	HRRZ T1,J	; GET STATUS AND START CHECKING BITS.
+	GDSTS
+	 ERCAL JSHLT0
+TRSDVE:	TRNN T2,MT%DVE	;DEVICE ERRORS?
+	 JRST TRSDAE
+	SETFLG (<DATA >,<late?>)	;YES
+	MTRSET
+	LOSERR <Device errors in TREAD>
+	JSHLT
+
+TRSDAE:	TRNN T2,MT%DAE	;DATA ERRORS?
+	 JRST TRSUNK
+	SETFLG (<DATA >,<ERR  >)
+	MTRSET
+	LOSERR <Data errors in TREAD>
+	JSHLT
+TRSUNK:	TMSG<
+?? Unknown data or device error in TREAD. DEV STS = >
+	MOVEI T1,.PRIOU
+	MOVX T3,NO%MAG+FLD(^D8,NO%RDX)
+	NOUT
+	 JSHLT
+	JSHLT
+	SUBTTL ACTUAL OUTPUT SUBROUTINE FOR TWRITE
+
+; Notes:	Returns +1 on errors
+;
+; Uses a hack of carrying the byte pointer L.H. in L.H. of MTJFN
+; argument word.
+
+TWSOUR:	HRRZ T1,J	;JFN
+	HLLZ T2,J	;L.H. OF BYTE POINTER
+	HRR T2,B	;BUFFER ADDRESS
+	MOVN T3,L	;NEG. OF # BYTES TO WRITE TO TAPE
+	SOUTR
+	 ERJMP TWRECK	;ERRORS IN SOUTR -- GO FIND OUT WTH HAPPENED
+
+	MOVE T1,[ASCII /No ER/]
+	MOVEM T1,0(F1)
+	MOVE T1,[ASCII /RORS /]
+	MOVEM T1,0(F2)	;SET FLAGS TO "No ERRORS"
+
+	HRRZ T1,J	;JFN
+	GDSTS		;GOTTA CHECK FOR END-OF-REEL MARK NOW.
+	TRNN T2,MT%EOT
+	 RETSKP		;NOPE -- CAN GO BACK O.K. NOW
+	SETFLG (<E O T>,<     >)	;GOT E-O-R .. SET FLAGS
+	MTRSET		;CLEAR THE FLAG
+	LOSERR <End-of-tape detected in TWRITE>
+	HALTF
+	SUBTTL ERROR PROCESSING FOR SOUTR IN TWRITE
+TWRECK:	MOVX T1,.FHSLF	;GET THE ERROR CONDITION
+	GETER
+	 ERCAL JSHLT0	;LOSE ON ANY ERRORS HERE
+	HRRZM T2,T1	;GET THE ERROR CONDITION IN T1
+
+	CAIE T1,IOX6	;ABSOLUTE EOF DETECTED?
+	 JRST TWR1	;  (NO)...
+	SETFLG (<E O T>,<     >)	;YES..SET FLAGS AND GIVE ERROR RETURN OR MESSAGE
+	MTRSET
+	LOSERR <Absolute End-of-file reached in TWRITE>	
+	JSHLT
+
+TWR1:	CAIE T1,DESX5	;FILE NOT OPENED? (DESX5 OR IOX2)
+	CAIN T1,IOX2
+	 SKIPA
+	  JRST TWR2
+
+	SETFLG (<Dev n>,<ot av>)
+	MTRSET
+	LOSERR <File not opened in TWRITE>
+	JSHLT
+
+TWR2:	CAIE T1,IOX5	;DATA OR DEVICE ERRORS?
+	 JRST [  TMSG<
+????  Unanticipated error in TWRITE>	;ANYTHING ELSE I WON'T HANDLE
+	 JSHLT]
+			; GOT DATA OR DEVICE ERRORS, SO
+	HRRZ T1,J	; GET STATUS AND START CHECKING BITS.
+	GDSTS
+	 ERCAL JSHLT0
+TWSDVE:	TRNN T2,MT%DVE	;DEVICE ERRORS?
+	 JRST TWSDAE
+	SETFLG (<DATA >,<late?>)	;YES
+	MTRSET
+	LOSERR <Device errors in TWRITE>
+	JSHLT
+
+TWSDAE:	TRNN T2,MT%DAE	;DATA ERRORS?
+	 JRST TWSUNK
+	SETFLG (<DATA >,<ERROR>)
+	MTRSET
+	LOSERR <Data errors in TWRITE>
+	JSHLT
+TWSUNK:	TMSG<
+?? Unknown data or device error in TWRITE. DEV STS = >
+	MOVEI T1,.PRIOU
+	MOVX T3,NO%MAG+FLD(^D8,NO%RDX)
+	NOUT
+	 JSHLT
+	JSHLT
+	SUBTTL	TCLOSE SUBROUTINES
+TCCHEK:
+	SETZ $ER,	;CLEAR THE ERROR RETURN ADDRESS
+
+	HLRE T1,-1(AP)	;GET THE NUMBER OF ARGUMENTS
+	MOVM T1,T1
+	CAIGE T1,1	;AT LEAST ONE ARGUMENT?
+	 JRST [ LOSERR <Not enough arguments in TCLOSE or tape positioning request>
+		HALTF]
+
+	CAIL T1,2
+	 MOVEI $ER,@1(AP)	;FETCH THE ERROR RETURN IF ANY
+
+	MOVE J,@0(AP)	;GET THE JFN WORD
+	RETSKP		;SUCCESS..
+
+;	BEFORE CLOSING THE FILE, CHECK FOR AN OUTPUT (WRITEABLE)
+;	FILE ... IF SO, WRITE AN EOF MARK ON THE TAPE FIRST.
+;	(NOTE THAT MULTI-FILE REELS WOULD NOT CLOSE UNTIL
+;	AFTER THE LAST FILE IS WRITTEN.)
+;	AFTER THE CLOSE, RETAIN THE JFN FOR FUTURE REFERENCE
+
+TCCLOS:
+	HRRZ T1,J	;GET THE JFN TO CLOSE
+	GTSTS		;GET THE FILE STATUS, IN PARTICULAR..
+	TXNN T2,GS%NAM	;WAS THE JFN GIVEN VALID?
+	 JRST [ LOSERR <Bad JFN given in Close request>	;NO, GIVE ERROR
+		HALTF]
+
+	TXNN T2,GS%OPN	;IS THE FILE CURRENTLY OPEN?
+	 RETSKP		;NO, JUST RETURN THEN
+
+	IOR T1,[CO%NRJ]		;OR IN BIT TO RETAIN THE JFN
+	CLOSF
+	 ERJMP [ LOSERR <Failure during TCLOSE>
+		 JSHLT]
+	RETSKP
+	END
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
