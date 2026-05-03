@@ -2,6 +2,8 @@
 /t20v4
 /dsk
 /dsk-41
+/tmp
+
 prt.log
 prt.lst
-/tmp
+ks*
