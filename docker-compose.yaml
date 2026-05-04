@@ -8,8 +8,8 @@ services:
 #      - "2030:2030"
     volumes:
       - type: bind
-        source: ./dec-20
-        target: /dec-20
+        source: ./kl
+        target: /kl
 #    command: sh -c "cd dec-20 && ./pdp10-kl dsk-boot.ini"
 # below leaves container with interactive terminal
     stdin_open: true # docker run -i
