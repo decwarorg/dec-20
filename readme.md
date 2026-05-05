@@ -1,4 +1,30 @@
 
+# what happened so far
+
+we were able to use dumper to create our own standard simh format tape t20an-v4-files.tap that seems to work ok within v41. we can restore the system and subsys directories on top of the v41 disk.
+
+# cpu setting matters
+
+for v41
+set cpu 1024k kl10a works -----------
+set cpu 1024k kl10b gets ------------
+MX>GET FILE MTA0:
+MX>START
+CANNOT FIND ERROR MESSAGE FILE
+?TOPS-20 command processor not properly initialized.
+INTERRUPT AT 116607
+
+for v4an
+set cpu 1024k kl10a crashes ---------
+MTBOOT >/g143
+HALT instruction, PC: 005224
+set cpu 1024k kl10b gets -------------
+MX>GET FILE MTA0:
+MX>START
+CANNOT FIND ERROR MESSAGE FILE
+?TOPS-20 command processor not properly initialized.
+INTERRUPT AT 76777
+
 ## Lars's notes
 
 First order of business: what resources are there for TOPS-20AN?
