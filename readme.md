@@ -3,6 +3,13 @@
 
 we were able to use dumper to create our own standard simh format tape t20an-v4-files.tap that seems to work ok within v41. we can restore the system and subsys directories on top of the v41 disk.
 
+    @ENABLE (CAPABILITIES) 
+    $DUMPER
+    DUMPER>TAPE MTA0:
+    DUMPER>SUPERSEDE ALWAYS
+    DUMPER>RESTORE PS:<*>*.*.* <SYSTEM>*.*.*
+    DUMPER>RESTORE PS:<*>*.*.* <SUBSYS>*.*.*
+
 # cpu setting matters
 
     for v41
